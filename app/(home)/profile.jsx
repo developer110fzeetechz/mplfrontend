@@ -12,7 +12,7 @@ export default function Profile() {
   console.log({ user })
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <>
       {user ? (
         (userRole === "admin" || userRole === "organisation") ? (
           <ProfilePage user={user} />
@@ -24,7 +24,7 @@ export default function Profile() {
           </View>
         )
       ) : (
-        <>
+        <ScrollView contentContainerStyle={styles.container}>
           {/* Welcome Message */}
           <Card style={styles.card}>
             <Card.Content>
@@ -61,9 +61,9 @@ export default function Profile() {
               </Paragraph>
             </Card.Content>
           </Card>
-        </>
+        </ScrollView>
       )}
-    </ScrollView>
+    </>
   )
 }
 

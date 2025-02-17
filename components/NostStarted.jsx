@@ -5,11 +5,13 @@ import { AntDesign, MaterialCommunityIcons } from '@expo/vector-icons';
 import { heightPerHeight, widthPerWidth } from '../helper/dimensions';
 import { Dropdown } from 'react-native-paper-dropdown';
 import { useData } from '../context/useData';
-import { useSocket } from '../context/socketContext';
+
 import Toast from 'react-native-toast-message';
 import { getUserDetails } from '../helper/Storage';
 import { useAuth } from '../context/AuthContext';
 import useAxios from '../helper/useAxios';
+import { useSocket } from '../context/socketContext';
+import RefreshLayout from '../helper/RefreshLayout';
 
 const NoStartedPage = ({ role, startAuction,setStarted,selectedInternalAuction, setselectedInternalAuction }) => {
   const { selectedAuction, setSelectedAuction, auctionData } = useData()
@@ -17,7 +19,7 @@ const NoStartedPage = ({ role, startAuction,setStarted,selectedInternalAuction, 
   console.log('NoStartedPage')
   const [selectOne, setselectOne] = useState('')
   const user = getUserDetails()
-  const { socket } = useSocket()
+  const { socket } = useSocket();
   const {fetchData}=useAxios()
   const {mydetails, userRole}=useAuth()
   console.log(auctionData)
@@ -57,10 +59,14 @@ const NoStartedPage = ({ role, startAuction,setStarted,selectedInternalAuction, 
       setStarted(true)
     }
    
-  
+  }
+
+  const refresh =()=>{
+
   }
   return (
-    <View style={styles.container}>
+    <RefreshLayout refreshFunction={joinRoom}>
+      <View style={styles.container}>
       {/* Empty State Illustration */}
       <View style={styles.iconContainer}>
         <AntDesign name="infocirlce" size={60} color="orange" />
@@ -103,6 +109,7 @@ const NoStartedPage = ({ role, startAuction,setStarted,selectedInternalAuction, 
         style={styles.helpIcon}
       />
     </View>
+    </RefreshLayout>
   );
 };
 

@@ -8,6 +8,18 @@ import { router } from 'expo-router';
 const ProfilePage = (props) => {
     const { user } = props
     const {logout}=useAuth()
+
+    const getBg =(status)=>{
+        if(status==="accepted"){
+            return 'green'
+        }else if(status==="rejected"){
+            return 'red'
+        } else {
+            return 'orange'
+        }
+        
+
+    }
     return (
         <ImageBackground
             source={{ uri: 'https://example.com/background-image.jpg' }}
@@ -30,6 +42,7 @@ const ProfilePage = (props) => {
                     <Card.Content>
                         <Text style={styles.cardTitle}>User Information</Text>
                         <View style={styles.infoContainer}>
+                        
                             <MaterialCommunityIcons name="account" size={20} color="gray" />
                             <Paragraph style={styles.infoText}>{user.name}</Paragraph>
                         </View>
@@ -37,6 +50,19 @@ const ProfilePage = (props) => {
                             <MaterialCommunityIcons name="email" size={20} color="gray" />
                             <Paragraph style={styles.infoText}>{user.email}</Paragraph>
                         </View>
+                        {user.role=="organisation" && <View style={[styles.infoContainer,{
+                            backgroundColor:getBg(user.status),
+                            borderRadius:10,
+                            padding:5,
+                            paddingLeft:10
+                        }]}>
+                            <MaterialCommunityIcons name="status" size={20} color="gray" />
+                            <Paragraph style={[styles.infoText,{
+                                color:"white",
+                                textTransform:"uppercase"
+                            }]}>{user.status}</Paragraph>
+                        </View> }
+                         
                     </Card.Content>
                 </Card>
 
@@ -152,6 +178,7 @@ const styles = StyleSheet.create({
         marginLeft: 10,
         fontSize: 16,
         color: '#333',
+
     },
     statsContainer: {
         flexDirection: 'row',
