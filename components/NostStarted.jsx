@@ -12,6 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import useAxios from '../helper/useAxios';
 import { useSocket } from '../context/socketContext';
 import RefreshLayout from '../helper/RefreshLayout';
+import { useSnackbar } from '../context/useSnackBar';
 
 const NoStartedPage = ({ role, startAuction,setStarted,selectedInternalAuction, setselectedInternalAuction }) => {
   const { selectedAuction, setSelectedAuction, auctionData } = useData()
@@ -21,8 +22,9 @@ const NoStartedPage = ({ role, startAuction,setStarted,selectedInternalAuction, 
   const user = getUserDetails()
   const { socket } = useSocket();
   const {fetchData}=useAxios()
-  const {mydetails, userRole}=useAuth()
-  console.log(auctionData)
+  const {mydetails, userRole, loggedInUser}=useAuth()
+  const {showSnackbar}=useSnackbar()
+  // console.log(auctionData)
 
   useEffect(()=>{
     if(userRole==="organisation"){
@@ -38,7 +40,7 @@ const NoStartedPage = ({ role, startAuction,setStarted,selectedInternalAuction, 
   },[mydetails, userRole])
   const joinRoom = async() => {
     if (!selectOne) {
-      ToastAndroid.show('Please select Event!', ToastAndroid.SHORT);
+      showSnackbar('Please Select Auction','error')
       return 0;
     }
     const {data,status} = await fetchData({
@@ -46,12 +48,14 @@ const NoStartedPage = ({ role, startAuction,setStarted,selectedInternalAuction, 
       method: 'GET',
     
     })
+    console.log(data)
     if(status){
+      console.log(status)
    
       socket.emit("join:room", {
-        username: user.name ||"test",
         auctionId: selectOne,
-        userId: user._id,
+        username: loggedInUser?.name ||"test",
+        userId: loggedInUser?._id,
         
       })
       console.log(data)

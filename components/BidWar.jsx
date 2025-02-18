@@ -4,7 +4,7 @@ import { StyleSheet, Text, View, ScrollView } from 'react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useSocket } from '../context/socketContext'
-import { showToast } from '../helper/toasts'
+
 import { heightPerHeight, widthPerWidth } from '../helper/dimensions'
 import { Avatar, Button, Card, Chip, Title, Snackbar, Paragraph, Icon } from 'react-native-paper'
 import MyDialog, { MyDialogNotify } from './Dialog'
@@ -12,10 +12,11 @@ import MyDialog, { MyDialogNotify } from './Dialog'
 import { router, useFocusEffect } from 'expo-router'
 import CurrentActivePlayer from './CurrentActivePlayer'
 import RefreshLayout from '../helper/RefreshLayout'
+import { useSnackbar } from '../context/useSnackBar'
 
 
 export default function BidWar({ auctionDetails }) {
-  const { mydetails, userRole } = useAuth();
+  const { mydetails, userRole , loggedInUser ,isLoggedIn} = useAuth();
   // console.log({ mydetails })
   const [user, setUser] = useState({})
 
@@ -43,12 +44,13 @@ export default function BidWar({ auctionDetails }) {
   const [snackBarContent, setSnackBarContent] = useState('fg')
   const [noitfyDetails, setNotifyDetails] = useState(null)
 
+  const {showSnackbar}=useSnackbar()
 
 
 
   const handleCurrentPlayer = useCallback((data) => {
     // console.log('current Player', data)
-    if ((!data.data) && user?.role === "admin") {
+    if ((!data.data) && loggedInUser?.role === "admin") {
       // console.log('inside null')
       socket.emit('EndAuction', {
         roomId: auctionDetails.roomId,
@@ -62,14 +64,18 @@ export default function BidWar({ auctionDetails }) {
     if (!data.data) setCurrentActivePlayer(null)
     // console.log('Current Player:', data);
     const bids = data.data.battleground.bids
+    console.log('user in active current player',loggedInUser?._id)
     if (bids.length) {
-      const userId = JSON.parse(mydetails)
+      
       const lastObj = bids[bids.length - 1]
-      if(lastObj?.bidderId===userId._id){
-        setDisableBid(true)
-      }else{
-        setDisableBid(false)
+      if(isLoggedIn){
+        if(lastObj?.bidderId===loggedInUser._id){
+          setDisableBid(true)
+        }else{
+          setDisableBid(false)
+        }
       }
+    
   
       // console.log({ lastObj })
       setNextBid(lastObj.nextBidAmount)
@@ -88,13 +94,13 @@ export default function BidWar({ auctionDetails }) {
 
   const startAuction = () => {
     socket.emit('start:auctionTable', { started: true, roomId: auctionDetails.roomId, auctionId: auctionDetails._id });
-    showToast('Auction Started');
+    showSnackbar('Auction Started', 'success')
     setIsStarted(true);
   };
   // ----------------emit---------------------------
   const handleBid = () => {
 if(totalPurse <= nextBid){
-  showToast('Not enough purse')
+  showSnackbar('Not Enough Purse','info')
   return  // If user does not have enough purse, do nothing and return
 }
     const payload = {
@@ -110,7 +116,7 @@ if(totalPurse <= nextBid){
   const soldTo = () => {
     // console.log({ currentBidder })
     if (!currentBidder) {
-      showToast('No current player to sell to')
+      showSnackbar('No current player to sell to', 'info')
       socket.emit('unSold', {
         playerId: currentActivePlayer._id,
         roomId: auctionDetails.roomId,
@@ -148,19 +154,19 @@ if(totalPurse <= nextBid){
   // ---------------------listen----------------------------------
   const getCurrentBid = useCallback((data) => {
     // console.log('current Bid', data)
+    console.log(`${loggedInUser?.name} current Bid`, data)
     const bids = data.bids
-console.log(bids[bids.length -1])
-const userId = JSON.parse(mydetails)
-console.log(`user`,userId._id)
+
     setNextBid(bids[bids.length - 1].nextBidAmount)
     setCurrentBid(bids[bids.length - 1].bidAmount)
     setCurentBidder(bids[bids.length - 1].bidderName)
-    if(bids[bids.length - 1].bidderId===userId._id){
-      setDisableBid(true)
-    }else{
-      setDisableBid(false)
+    if(isLoggedIn){
+      if(bids[bids.length - 1].bidderId===loggedInUser._id){
+        setDisableBid(true)
+      }else{
+        setDisableBid(false)
+      }
     }
-
     setBidHistory(bids.reverse())
   }, [])
 
@@ -168,7 +174,7 @@ console.log(`user`,userId._id)
     console.log('Sold to', data)
     console.log(user)
     if(data.bidderId._Id==user.id){
-      showToast('You sold to this player')
+      showSnackbar('You purchased this player', "success")
       // console.log('dsfd')
       const userId= JSON.parse(mydetails)
       socket.emit('getPurse', {
@@ -216,7 +222,7 @@ console.log(`user`,userId._id)
       })
     }
     const payload={
-      userId: user?._id,
+      userId: loggedInUser?._id,
       roomId: auctionDetails.roomId,
       auctionId: auctionDetails._id,
       socketId: socket.id
@@ -239,7 +245,7 @@ console.log(`user`,userId._id)
   useEffect(() => {
     if (socket) {
       socket.on('user:joined', (data) => {
-        showToast(`${data.userId.name} Joined In Auction`);
+        showSnackbar(`${data?.userId?.name} Joined In Auction`,"info")
       });
       socket.on('getPurse', (data) => {
         // console.log('Purse', data)
@@ -248,7 +254,8 @@ console.log(`user`,userId._id)
 
 
       socket.on('start:auctionTable', (data) => {
-        showToast('auction started')
+        showSnackbar('Auction Started','sucess')
+
         setIsStarted(true)
 
       });
@@ -262,14 +269,16 @@ console.log(`user`,userId._id)
       socket.on('auctionEnd', (data) => {
         // console.log('Auction End', data)
         setIsStarted(false)
-        showToast('Auction Ended')
+        showSnackbar('Auction Ended', 'info')
+
         router.replace('(home)')
 
       })
       socket.on('isAuctionStarted', (data) => {
         if (data.isStarted) {
           setIsStarted(true)
-          showToast('Auction Started')
+        
+          showSnackbar('Auction Started','success')
         }
       })
       socket.on('lastChance', lastChanceHanlder);
@@ -292,7 +301,14 @@ console.log(`user`,userId._id)
     }
   }, [socket, auctionDetails,user]);
 
-
+ const isValidOragnisationUser =()=>{
+  console.log({loggedInUser , status:loggedInUser.status})
+  if(userRole==="organisation" && loggedInUser?.status!== "accepted"){
+    return false
+  }else{
+    return true
+  }
+ }
 
   return (
     <RefreshLayout refreshFunction={isAuctionStartedfn}>
@@ -338,10 +354,10 @@ console.log(`user`,userId._id)
                 </View>}
                 {
                   (userRole === "organisation") && <>
-                    <Button disabled={disableBid} mode="contained" onPress={() => handleBid()} style={{ marginTop: 20, marginVertical: 10, marginHorizontal: 20 }}>
-                      Make Bid
+                    <Button disabled={disableBid || !isValidOragnisationUser()} mode="contained" onPress={() => handleBid()} style={{ marginTop: 20, marginVertical: 10, marginHorizontal: 20 }}>
+                      Make Bid {nextBid || currentBid}
                     </Button>
-                    <Button mode="contained" onPress={() => outOfRace()} style={{ marginTop: 20, marginVertical: 10, marginHorizontal: 20 }}>
+                    <Button mode="contained"  onPress={() => outOfRace()} style={{ marginTop: 20, marginVertical: 10, marginHorizontal: 20 }}>
                       Out Of Race
                     </Button>
                   </>

@@ -6,16 +6,18 @@ import useAxios, { baseUrl } from '../helper/useAxios';
 import { widthPerWidth } from '../helper/dimensions';
 import PullToRefreshLayout from './layout/PullToRefreshLayout';
 import RefreshLayout from '../helper/RefreshLayout';
+import { useAuth } from '../context/AuthContext';
 
 export default function PlayerProfile() {
   const [playerDetails, setPlayerDetails] = useState(null);
   const [bidDetails, setBidDetails] = useState(null);
+  const {loggedInUser}=useAuth()
   const user = getUserDetails();
   const {fetchData} = useAxios();
 
   const getPlayer = async () => {
     const res = await fetchData({
-      url: `/api/players/player/${user._id}`,
+      url: `/api/players/player/${user._id || loggedInUser._id}`,
       method: 'GET',
     });
     if (res.status) {

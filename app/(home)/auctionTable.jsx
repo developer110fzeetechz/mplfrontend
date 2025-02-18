@@ -11,11 +11,14 @@ import { Button } from 'react-native-paper'
 import { usePathname, useRouter } from 'expo-router'
 import PullToRefreshLayout from '../../components/layout/PullToRefreshLayout';
 import RefreshLayout from '../../helper/RefreshLayout';
+import { useData } from '../../context/useData';
 
 export default function auctionTable() {
-    const [started, setStarted] = useState(false)
+    // const [started, setStarted] = useState(false)
     const { userRole, mydetails } = useAuth()
-    const [selectedInternalAuction, setselectedInternalAuction] = useState(null);
+    const {started, setStarted,
+        selectedInternalAuction, setselectedInternalAuction}=useData()
+    // const [selectedInternalAuction, setselectedInternalAuction] = useState(null);
     const [text, setText] = useState('')
     console.log('renderd')
     console.log({ userRole })

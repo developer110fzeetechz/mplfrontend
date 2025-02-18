@@ -60,7 +60,7 @@ export default function PullToRefreshLayout({ children, refreshFunction }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {height:"auto"},
   loader: {
     position: "absolute",
     top: 40,

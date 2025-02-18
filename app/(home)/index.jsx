@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, Text } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Text, FlatList } from 'react-native';
 import Dashboard from '../../components/Dashboard';
 import { useAuth } from '../../context/AuthContext';
 import useAxios, { baseUrl } from '../../helper/useAxios';
-import { Appbar, Avatar, Button, Menu } from 'react-native-paper';
+import { Appbar, Avatar, Button, Card, Menu } from 'react-native-paper';
 import { getUserDetails } from '../../helper/Storage';
 import { useSocket } from '../../context/socketContext';
 import { Dropdown } from 'react-native-paper-dropdown';
@@ -11,6 +11,7 @@ import { useData } from '../../context/useData';
 import { widthPerWidth } from '../../helper/dimensions';
 import { router } from 'expo-router';
 import PullToRefreshLayout from '../../components/layout/PullToRefreshLayout';
+import { useSnackbar } from '../../context/useSnackBar';
 
 // Import Common Layout
 // import PullToRefreshLayout from '../../components/PullToRefreshLayout';
@@ -18,20 +19,21 @@ import PullToRefreshLayout from '../../components/layout/PullToRefreshLayout';
 export default function Home() {
   const [dashboard, setDashboard] = useState({});
   const { fetchData } = useAxios();
-  const { logout, userRole, mydetails } = useAuth();
+  const { logout, userRole, mydetails, loggedInUser, setLoggedInUser } = useAuth();
   const { socket, isConnected } = useSocket();
-  const { selectedAuction, setSelectedAuction, auctionData } = useData();
+  const { selectedAuction, setSelectedAuction, auctionData, auctionDetaileddata } = useData();
+  const { started, setStarted,
+    selectedInternalAuction, setselectedInternalAuction } = useData()
+  const [liveAuction, setLiveAuction] = useState([])
   const [myAuctionList, setMyAuctionList] = useState([]);
   const [menuVisible, setMenuVisible] = useState(false);
-  const [user, setUser] = useState(null);
+  const { showSnackbar } = useSnackbar()
+
 
   useEffect(() => {
-    async function fetchUser() {
-      const userData = await getUserDetails();
-      setUser(userData);
-    }
-    fetchUser();
-  }, []);
+    const _filtered = auctionDetaileddata.filter((data) => data.status === "InProgress")
+    setLiveAuction(_filtered)
+  }, [auctionDetaileddata])
 
   // Fetch dashboard data
   const getAllData = async () => {
@@ -55,10 +57,31 @@ export default function Home() {
   }, [userRole, mydetails, auctionData]);
 
   useEffect(() => {
-    if (socket && isConnected && user) {
-      socket.emit('go:online', { ...user, socketId: socket.id });
+
+    if (socket && isConnected && loggedInUser) {
+      showSnackbar(`${loggedInUser.name || ""} connected`, 'success')
+      socket.emit('go:online', { ...loggedInUser, socketId: socket.id });
+    } else {
+      showSnackbar('Error in connecting ', 'error')
+
     }
-  }, [socket, isConnected, user]);
+  }, [socket, isConnected, loggedInUser]);
+
+  const enterInRoom = (item) => {
+    setStarted(true)
+    setselectedInternalAuction(item)
+    const payload = {
+      auctionId: item._id,
+      username: loggedInUser?.name || "test",
+      userId: loggedInUser?._id,
+
+    }
+    console.log({ payload })
+    socket.emit("join:room", payload)
+    // Add your code to enter into the room
+    // router.push(`auctionTable?auctiond=${id}`)
+    router.push({ pathname: 'auctionTable', params: { auctionId: item._id } })
+  }
 
   return (
     <PullToRefreshLayout refreshFunction={getAllData}>
@@ -80,7 +103,7 @@ export default function Home() {
               anchor={
                 <Avatar.Image
                   size={45}
-                  source={{ uri: user?.image ? `${baseUrl}${user.image}` : "https://via.placeholder.com/150" }}
+                  source={{ uri: loggedInUser?.image ? `${baseUrl}${loggedInUser.image}` : "https://via.placeholder.com/150" }}
                   style={styles.avatar(isConnected)}
                   onTouchEnd={() => setMenuVisible(true)}
                 />
@@ -98,6 +121,32 @@ export default function Home() {
       </Appbar.Header>
 
       {/* Dashboard Content */}
+      <FlatList
+        data={liveAuction}
+        keyExtractor={(item) => item._id}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.auctionItem} onPress={() => enterInRoom(item)}>
+            <Card mode='elevated'>
+              <Card.Content>
+              <Card.Title title={`🟢${item.title}`} subtitle={item.description}  titleStyle={{
+                fontSize: 18,
+                fontWeight: 'bold',
+                marginBottom: 5
+              }}/>
+              </Card.Content>
+           
+            </Card>
+          </TouchableOpacity>
+        )}
+        ListHeaderComponent={
+          <View style={styles.listHeader}>
+            <Text style={styles.listTitle}> 🟢 Live Auctions</Text>
+          </View>
+        }
+        contentContainerStyle={styles.auctionLists}
+
+        showsVerticalScrollIndicator={false}
+      />
       <Dashboard dashboard={dashboard} />
     </PullToRefreshLayout>
   );
@@ -118,4 +167,13 @@ const styles = StyleSheet.create({
     borderColor: isConnected ? 'green' : 'red',
   }),
   logoutIcon: { fontSize: 25 },
+  auctionLists: {
+marginHorizontal:10,
+marginVertical:10
+  },
+  listTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10
+  }
 });

@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, StyleSheet, ImageBackground, ScrollView, TouchableOpacity } from 'react-native';
 import { Text, Button, Card, Avatar, Paragraph, IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { router } from 'expo-router';
+import RefreshLayout from '../helper/RefreshLayout';
+import { getUserProfile } from '../helper/Api';
 
 const ProfilePage = (props) => {
     const { user } = props
-    const {logout}=useAuth()
+    const {logout ,userToken}=useAuth()
+     const {getUser}  = getUserProfile()
 
     const getBg =(status)=>{
         if(status==="accepted"){
@@ -17,14 +20,19 @@ const ProfilePage = (props) => {
         } else {
             return 'orange'
         }
-        
-
     }
+    useEffect(()=>{
+        getUser(userToken)
+    },[])
+
+    const getuserDet = ()=>{
+        getUser(userToken)
+    }
+
+
     return (
-        <ImageBackground
-            source={{ uri: 'https://example.com/background-image.jpg' }}
-            style={styles.background}
-        >
+      <RefreshLayout  refreshFunction={getuserDet}>
+        
             <ScrollView contentContainerStyle={styles.scrollContainer}  
                 showsVerticalScrollIndicator={false}
             >
@@ -126,7 +134,8 @@ const ProfilePage = (props) => {
                     Logout
                 </Button>
             </ScrollView>
-        </ImageBackground>
+ 
+      </RefreshLayout>
     );
 };
 

@@ -38,7 +38,7 @@ export default function TeamList() {
       method: "GET",
     });
     setLoading(false);
-
+console.log(`/api/users?auctionId=${selectedAuction}`,res)
     if (res.status) {
       setTeams(res.data);
     }
