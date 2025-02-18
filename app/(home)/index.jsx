@@ -19,7 +19,7 @@ import { useSnackbar } from '../../context/useSnackBar';
 export default function Home() {
   const [dashboard, setDashboard] = useState({});
   const { fetchData } = useAxios();
-  const { logout, userRole, mydetails, loggedInUser, setLoggedInUser } = useAuth();
+  const { logout, userRole, mydetails, loggedInUser, setLoggedInUser,isLoggedIn } = useAuth();
   const { socket, isConnected } = useSocket();
   const { selectedAuction, setSelectedAuction, auctionData, auctionDetaileddata } = useData();
   const { started, setStarted,
@@ -60,12 +60,15 @@ export default function Home() {
 
     if (socket && isConnected && loggedInUser) {
       showSnackbar(`${loggedInUser.name || ""} connected`, 'success')
-      socket.emit('go:online', { ...loggedInUser, socketId: socket.id });
+      if(isLoggedIn){
+
+        socket.emit('go:online', { ...loggedInUser, socketId: socket.id });
+      }
     } else {
       showSnackbar('Error in connecting ', 'error')
 
     }
-  }, [socket, isConnected, loggedInUser]);
+  }, [socket, isConnected, loggedInUser ,isLoggedIn]);
 
   const enterInRoom = (item) => {
     setStarted(true)
